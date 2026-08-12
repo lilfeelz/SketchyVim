@@ -13,3 +13,4 @@ extern char* string_copy(char* s);
 @end
 
 void workspace_begin(void **context);
+void workspace_end(void **context);

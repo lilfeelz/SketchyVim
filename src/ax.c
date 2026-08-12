@@ -277,3 +277,11 @@ void ax_clear(struct ax* ax) {
   ax->selected_element = NULL;
   ax->is_supported = false;
 }
+
+void ax_end(struct ax* ax) {
+  ax_clear(ax);
+  if (ax->system_element) {
+    CFRelease(ax->system_element);
+    ax->system_element = NULL;
+  }
+}

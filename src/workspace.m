@@ -62,3 +62,13 @@ static void window_detector_app_visibility_changed(bool any_visible) {
 }
 
 @end
+
+void workspace_end(void **context) {
+    if (context && *context) {
+        workspace_context *ws_context = (workspace_context *)*context;
+        [ws_context dealloc];
+        *context = NULL;
+    }
+
+    window_detector_end();
+}

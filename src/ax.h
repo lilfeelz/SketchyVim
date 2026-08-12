@@ -33,6 +33,7 @@ struct ax {
 
 struct ax g_ax;
 void ax_begin(struct ax* ax);
+void ax_end(struct ax* ax);
 void ax_clear(struct ax* ax);
 
 CGEventRef ax_process_event(struct ax* ax, CGEventRef event);
