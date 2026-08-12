@@ -225,7 +225,7 @@ CGEventRef ax_process_event(struct ax* ax, CGEventRef event) {
     
     bool was_insert = ax->buffer.cursor.mode & INSERT
                       || !ax->buffer.cursor.mode;
-    buffer_input(&ax->buffer, character, count);
+    buffer_input(&ax->buffer, character, count, flags);
 
     // Insert mode is passed and only synced later
     if (was_insert && ax->buffer.cursor.mode & INSERT) return event;
