@@ -9,6 +9,7 @@
 
 extern char *cfstring_get_cstring(CFStringRef text_ref);
 extern char *string_copy(char *s);
+extern const char* get_bundle_id_for_pid(uint64_t pid);
 
 static pthread_t detector_thread;
 static bool detector_running = false;
@@ -27,8 +28,8 @@ static bool window_detector_is_app_visible(const char *app_name) {
   }
 
   CFIndex window_count = CFArrayGetCount(window_list);
-  bool found = false;
 
+  // First pass: check owner name (fast, no extra lookup)
   for (CFIndex i = 0; i < window_count; i++) {
     CFDictionaryRef window_info = (CFDictionaryRef)CFArrayGetValueAtIndex(window_list, i);
     if (!window_info)
@@ -38,17 +39,37 @@ static bool window_detector_is_app_visible(const char *app_name) {
     if (owner_name) {
       char *owner_cstring = cfstring_get_cstring(owner_name);
       if (owner_cstring && strcmp(owner_cstring, app_name) == 0) {
-        found = true;
         free(owner_cstring);
-        break;
+        CFRelease(window_list);
+        return true;
       }
       if (owner_cstring)
         free(owner_cstring);
     }
   }
 
+  // Second pass: check PID -> bundle-ID (for apps listed by bundle ID)
+  for (CFIndex i = 0; i < window_count; i++) {
+    CFDictionaryRef window_info = (CFDictionaryRef)CFArrayGetValueAtIndex(window_list, i);
+    if (!window_info)
+      continue;
+
+    CFNumberRef pid_ref = (CFNumberRef)CFDictionaryGetValue(window_info, kCGWindowOwnerPID);
+    if (!pid_ref)
+      continue;
+
+    pid_t pid = 0;
+    CFNumberGetValue(pid_ref, kCFNumberIntType, &pid);
+
+    const char *bundle_id = get_bundle_id_for_pid(pid);
+    if (bundle_id && strcmp(bundle_id, app_name) == 0) {
+      CFRelease(window_list);
+      return true;
+    }
+  }
+
   CFRelease(window_list);
-  return found;
+  return false;
 }
 
 static bool window_detector_any_watched_visible(void) {
@@ -88,14 +109,17 @@ static void load_watched_apps(void) {
 static void *detector_thread_func(void *arg) {
   (void)arg;
 
+  bool first_sample = true;
+
   while (detector_running) {
     bool current_visible = window_detector_any_watched_visible();
 
-    if (current_visible != last_visibility) {
+    if (first_sample || current_visible != last_visibility) {
       if (user_callback) {
         user_callback(current_visible);
       }
       last_visibility = current_visible;
+      first_sample = false;
     }
 
     usleep(500000);

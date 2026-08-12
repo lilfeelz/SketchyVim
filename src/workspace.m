@@ -45,19 +45,19 @@ void workspace_begin(void **context) {
       }
     }
 
-    g_event_tap.front_app_ignored = event_tap_check_blacklist(&g_event_tap,
-                                                              name,
-                                                              bundle_id    );
+    __atomic_store_n(&g_event_tap.front_app_ignored,
+                     event_tap_check_blacklist(&g_event_tap, name, bundle_id),
+                     __ATOMIC_RELEASE);
     ax_front_app_changed(&g_ax, pid);
 }
 
 static void window_detector_app_visibility_changed(bool any_visible) {
     if (any_visible) {
         printf("blacklisted app appeared\n");
-        g_event_tap.front_app_ignored = true;
+        __atomic_store_n(&g_event_tap.front_app_ignored, true, __ATOMIC_RELEASE);
     } else {
         printf("blacklisted app disappeared\n");
-        g_event_tap.front_app_ignored = false;
+        __atomic_store_n(&g_event_tap.front_app_ignored, false, __ATOMIC_RELEASE);
     }
 }
 

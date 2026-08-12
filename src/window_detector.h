@@ -1,6 +1,5 @@
 #pragma once
 #include <stdbool.h>
-#include <CoreGraphics/CoreGraphics.h>
 
 void window_detector_begin(void);
 

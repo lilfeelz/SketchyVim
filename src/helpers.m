@@ -43,6 +43,10 @@ const char* get_name_for_pid(uint64_t pid) {
   return [[[NSRunningApplication runningApplicationWithProcessIdentifier:pid] localizedName] UTF8String];
 }
 
+const char* get_bundle_id_for_pid(uint64_t pid) {
+  return [[[NSRunningApplication runningApplicationWithProcessIdentifier:pid] bundleIdentifier] UTF8String];
+}
+
 const char* read_file(char* path) {
   struct stat buffer;
 
