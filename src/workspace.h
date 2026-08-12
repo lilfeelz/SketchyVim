@@ -1,6 +1,7 @@
 #pragma once
 #include <Cocoa/Cocoa.h>
 #include "event_tap.h"
+#include "window_detector.h"
 
 bool g_front_app_ignored;
 

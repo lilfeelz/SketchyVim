@@ -7,6 +7,8 @@ void workspace_begin(void **context) {
     *context = ws_context;
 
     [ws_context init];
+
+    window_detector_begin();
 }
 
 @implementation workspace_context
@@ -16,6 +18,8 @@ void workspace_begin(void **context) {
                 selector:@selector(appSwitched:)
                 name:NSWorkspaceDidActivateApplicationNotification
                 object:nil];
+
+        window_detector_set_callback(window_detector_app_visibility_changed);
     }
 
     return self;
@@ -45,6 +49,16 @@ void workspace_begin(void **context) {
                                                               name,
                                                               bundle_id    );
     ax_front_app_changed(&g_ax, pid);
+}
+
+static void window_detector_app_visibility_changed(bool any_visible) {
+    if (any_visible) {
+        printf("blacklisted app appeared\n");
+        g_event_tap.front_app_ignored = true;
+    } else {
+        printf("blacklisted app disappeared\n");
+        g_event_tap.front_app_ignored = false;
+    }
 }
 
 @end
