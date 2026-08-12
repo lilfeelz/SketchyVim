@@ -43,8 +43,14 @@ const char* get_name_for_pid(uint64_t pid) {
   return [[[NSRunningApplication runningApplicationWithProcessIdentifier:pid] localizedName] UTF8String];
 }
 
-const char* get_bundle_id_for_pid(uint64_t pid) {
-  return [[[NSRunningApplication runningApplicationWithProcessIdentifier:pid] bundleIdentifier] UTF8String];
+char* get_bundle_id_for_pid(uint64_t pid) {
+  NSString *bundle_id = [[NSRunningApplication runningApplicationWithProcessIdentifier:pid] bundleIdentifier];
+  if (!bundle_id)
+    return NULL;
+  const char *utf8 = [bundle_id UTF8String];
+  char *copy = malloc(strlen(utf8) + 1);
+  strcpy(copy, utf8);
+  return copy;
 }
 
 const char* read_file(char* path) {

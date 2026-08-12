@@ -9,7 +9,7 @@
 
 extern char *cfstring_get_cstring(CFStringRef text_ref);
 extern char *string_copy(char *s);
-extern const char* get_bundle_id_for_pid(uint64_t pid);
+extern char* get_bundle_id_for_pid(uint64_t pid);
 
 static pthread_t detector_thread;
 static bool detector_running = false;
@@ -63,9 +63,11 @@ static bool window_detector_is_app_visible(const char *app_name) {
 
     const char *bundle_id = get_bundle_id_for_pid(pid);
     if (bundle_id && strcmp(bundle_id, app_name) == 0) {
+      free((char*)bundle_id);
       CFRelease(window_list);
       return true;
     }
+    free((char*)bundle_id);
   }
 
   CFRelease(window_list);
