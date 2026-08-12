@@ -18,6 +18,7 @@ OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 .PHONY: all x86 arm64 universal sign lib clean
 
 all: $(ODIR)/svim
+	codesign -fs 'svim-cert' $<
 
 x86: CFLAGS = $(WARN_FLAGS) $(DEFINES) -g -Ilib -Ilib/libvim/proto -std=c99 -O2 -target x86_64-apple-macos12.0
 x86: $(ODIR)/svim
