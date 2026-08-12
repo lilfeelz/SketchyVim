@@ -12,12 +12,13 @@ CFLAGS = $(WARN_FLAGS) $(DEFINES) -g -Ilib -Ilib/libvim/proto -std=c99 -O2 #-fsa
 ODIR = bin
 SRC = src
 
-_OBJ = helpers.om workspace.om event_tap.o ax.o buffer.o line.o env_vars.o
+_OBJ = helpers.om workspace.om event_tap.o ax.o buffer.o line.o env_vars.o window_detector.o
 OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 
 .PHONY: all x86 arm64 universal sign lib clean
 
 all: $(ODIR)/svim
+	codesign -fs 'svim-cert' $<
 
 x86: CFLAGS = $(WARN_FLAGS) $(DEFINES) -g -Ilib -Ilib/libvim/proto -std=c99 -O2 -target x86_64-apple-macos12.0
 x86: $(ODIR)/svim
