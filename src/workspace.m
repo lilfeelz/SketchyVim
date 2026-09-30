@@ -2,6 +2,9 @@
 #include "buffer.h"
 #include "event_tap.h"
 
+static void set_front_app(NSRunningApplication* app);
+static void window_detector_focus_changed(pid_t pid);
+
 void workspace_begin(void **context) {
     workspace_context *ws_context = [workspace_context alloc];
     *context = ws_context;
@@ -19,7 +22,7 @@ void workspace_begin(void **context) {
                 name:NSWorkspaceDidActivateApplicationNotification
                 object:nil];
 
-        window_detector_set_callback(window_detector_app_visibility_changed);
+        window_detector_set_callback(window_detector_focus_changed);
     }
 
     return self;
@@ -33,35 +36,28 @@ void workspace_begin(void **context) {
 }
 
 - (void)appSwitched:(NSNotification *)notification {
-    char* name = NULL;
-    char* bundle_id = NULL;
-    pid_t pid = 0;
-    if (notification && notification.userInfo) {
-      NSRunningApplication* app = [notification.userInfo objectForKey:NSWorkspaceApplicationKey];
-      if (app) {
-        name = (char*)[[app localizedName] UTF8String];
-        bundle_id = (char*)[[app bundleIdentifier] UTF8String];
-        pid = app.processIdentifier;
-      }
-    }
+    NSRunningApplication* app = nil;
+    if (notification && notification.userInfo)
+      app = [notification.userInfo objectForKey:NSWorkspaceApplicationKey];
+    set_front_app(app);
+}
+
+@end
+
+static void set_front_app(NSRunningApplication* app) {
+    char* name = app ? (char*)[[app localizedName] UTF8String] : NULL;
+    char* bundle_id = app ? (char*)[[app bundleIdentifier] UTF8String] : NULL;
 
     __atomic_store_n(&g_event_tap.front_app_ignored,
                      event_tap_check_blacklist(&g_event_tap, name, bundle_id),
                      __ATOMIC_RELEASE);
-    ax_front_app_changed(&g_ax, pid);
+    ax_front_app_changed(&g_ax, app ? app.processIdentifier : 0);
 }
 
-static void window_detector_app_visibility_changed(bool any_visible) {
-    if (any_visible) {
-        printf("blacklisted app appeared\n");
-        __atomic_store_n(&g_event_tap.front_app_ignored, true, __ATOMIC_RELEASE);
-    } else {
-        printf("blacklisted app disappeared\n");
-        __atomic_store_n(&g_event_tap.front_app_ignored, false, __ATOMIC_RELEASE);
-    }
+static void window_detector_focus_changed(pid_t pid) {
+    set_front_app([NSRunningApplication runningApplicationWithProcessIdentifier:pid]);
 }
 
-@end
 
 void workspace_end(void **context) {
     if (context && *context) {
