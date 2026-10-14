@@ -210,14 +210,11 @@ CGEventRef ax_process_event(struct ax* ax, CGEventRef event) {
   if (character == ENTER && (flags & FLAG_SHIFT))
     return event;
 
-  // Shift Escape
-  if (character == ESCAPE && (flags & FLAG_SHIFT))
+  // Plain Escape goes to the app, Shift Escape and C-[ are vim's Escape
+  if (character == ESCAPE && !(flags & (FLAG_SHIFT | FLAG_CONTROL)))
     return event;
 
   if (ax->role == ROLE_TEXT) {
-    // Escape in normal mode
-    if (character == ESCAPE && ax->buffer.cursor.mode & NORMAL)
-      return event;
 
     // Enter in normal mode
     if (character == ENTER && ax->buffer.cursor.mode & NORMAL)
