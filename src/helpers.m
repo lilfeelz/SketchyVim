@@ -43,15 +43,19 @@ const char* get_name_for_pid(uint64_t pid) {
   return [[[NSRunningApplication runningApplicationWithProcessIdentifier:pid] localizedName] UTF8String];
 }
 
+// Called from the window detector's plain pthread, which has no autorelease pool: without its
+// own pool every lookup leaks the autoreleased NSRunningApplication.
 char* get_bundle_id_for_pid(uint64_t pid) {
-  NSString *bundle_id = [[NSRunningApplication runningApplicationWithProcessIdentifier:pid] bundleIdentifier];
-  if (!bundle_id)
-    return NULL;
-  const char *utf8 = [bundle_id UTF8String];
-  char *copy = malloc(strlen(utf8) + 1);
-  if (!copy)
-    return NULL;
-  strcpy(copy, utf8);
+  char *copy = NULL;
+  @autoreleasepool {
+    NSString *bundle_id = [[NSRunningApplication runningApplicationWithProcessIdentifier:pid] bundleIdentifier];
+    if (bundle_id) {
+      const char *utf8 = [bundle_id UTF8String];
+      copy = malloc(strlen(utf8) + 1);
+      if (copy)
+        strcpy(copy, utf8);
+    }
+  }
   return copy;
 }
 
