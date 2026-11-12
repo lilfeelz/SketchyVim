@@ -4,16 +4,28 @@
 #include "ax.h"
 #include "workspace.h"
 #include <signal.h>
+#include <dispatch/dispatch.h>
 
 void* g_workspace;
 
-static void cleanup_and_exit(int sig) {
-  (void)sig;
+static void cleanup_and_exit(void *context) {
+  (void)context;
   event_tap_end(&g_event_tap);
   ax_end(&g_ax);
   workspace_end(&g_workspace);
 
   exit(0);
+}
+
+// Cleanup frees memory and calls into Cocoa, which a signal() handler must not do. A dispatch
+// source runs it on the main queue (drained by CFRunLoopRun) instead; SIG_IGN only stops the
+// default action, the source still sees the signal. The source is never released.
+static void handle_signal(int sig) {
+  signal(sig, SIG_IGN);
+  dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_SIGNAL, sig, 0,
+                                                    dispatch_get_main_queue());
+  dispatch_source_set_event_handler_f(source, cleanup_and_exit);
+  dispatch_resume(source);
 }
 
 static void acquire_lockfile(void) {
@@ -47,8 +59,8 @@ int main (int argc, char *argv[]) {
   NSApplicationLoad();
   signal(SIGCHLD, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
-  signal(SIGINT, cleanup_and_exit);
-  signal(SIGTERM, cleanup_and_exit);
+  handle_signal(SIGINT);
+  handle_signal(SIGTERM);
 
   acquire_lockfile();
   ax_begin(&g_ax);
