@@ -1,4 +1,7 @@
 # SketchyVim
+
+> Fork of [FelixKratz/SketchyVim](https://github.com/FelixKratz/SketchyVim), kept for personal use.
+
 This small project turns accessible(!) input fields on macOS into full vim
 buffers. It should behave and feel like native vim, because, under the hood
 I synchronize the text field with a real vim buffer.
