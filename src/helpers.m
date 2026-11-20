@@ -1,9 +1,7 @@
 #include "helpers.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 bool vfork_exec(char *command, struct env_vars* env_vars) {
-    int pid = vfork();
+    int pid = fork();
     if (pid == -1) return false;
     if (pid !=  0) return true;
 
@@ -16,9 +14,8 @@ bool vfork_exec(char *command, struct env_vars* env_vars) {
     }
 
     char *exec[] = { "/usr/bin/env", "sh", "-c", command, NULL};
-    exit(execvp(exec[0], exec));
+    _exit(execvp(exec[0], exec));
 }
-#pragma clang diagnostic pop
 
 char* cfstring_get_cstring(CFStringRef text_ref) {
   CFIndex length = CFStringGetLength(text_ref);
