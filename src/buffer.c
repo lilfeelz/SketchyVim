@@ -76,14 +76,30 @@ static inline void buffer_sync_text(struct buffer* buffer) {
   }
 }
 
+static inline linenr_T buffer_clamp_lnum(struct buffer* buffer, linenr_T lnum) {
+  if (lnum < 1) return 1;
+  if (lnum > (linenr_T) buffer->line_count) return buffer->line_count;
+  return lnum;
+}
+
 static inline void buffer_sync_cursor(struct buffer* buffer) {
   pos_T cursor_pos = vimCursorGetPosition();
-  uint32_t pos = line_get_position_from_raw_position(
-                                          buffer->lines[cursor_pos.lnum - 1],
-                                          cursor_pos.col                     );
 
-  buffer->cursor.position = buffer->lines[cursor_pos.lnum - 1]->cursor_offset
-                            + pos;
+  // vim keeps reporting the old cursor line after the buffer shrank
+  cursor_pos.lnum = buffer_clamp_lnum(buffer, cursor_pos.lnum);
+  struct line* cursor_line = buffer->line_count
+                             ? buffer->lines[cursor_pos.lnum - 1]
+                             : NULL;
+  if (!cursor_line) {
+    buffer->cursor.position = 0;
+    buffer->cursor.selection = 0;
+    return;
+  }
+
+  uint32_t pos = line_get_position_from_raw_position(cursor_line,
+                                                     cursor_pos.col);
+
+  buffer->cursor.position = cursor_line->cursor_offset + pos;
 
   if (buffer->cursor.mode & NORMAL) {
     buffer->cursor.selection = 1;
@@ -97,6 +113,9 @@ static inline void buffer_sync_cursor(struct buffer* buffer) {
       vimVisualGetRange(&end, &start);
       inverted = true;
     }
+
+    start.lnum = buffer_clamp_lnum(buffer, start.lnum);
+    end.lnum = buffer_clamp_lnum(buffer, end.lnum);
 
     uint32_t start_pos = line_get_position_from_raw_position(
                                                buffer->lines[start.lnum - 1],
@@ -114,7 +133,7 @@ static inline void buffer_sync_cursor(struct buffer* buffer) {
     int visual_mode = vimVisualGetType();
 
     if (visual_mode == VISUAL_LINE) {
-      buffer->cursor.position = buffer->lines[cursor_pos.lnum-1]->cursor_offset
+      buffer->cursor.position = cursor_line->cursor_offset
                                 - (inverted ? 0 : selection);
       selection += buffer->lines[end.lnum - 1]->length;
       buffer->cursor.selection = selection;
