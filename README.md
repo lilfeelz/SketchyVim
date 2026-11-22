@@ -1,6 +1,6 @@
 # SketchyVim
 
-Fork of [FelixKratz/SketchyVim](https://github.com/FelixKratz/SketchyVim) turning accessible macOS text fields into `libvim` buffers.
+Fork of [FelixKratz/SketchyVim](https://github.com/FelixKratz/SketchyVim), kept for personal use, turning accessible macOS text fields into `libvim` buffers.
 
 ## Build & Install
 
